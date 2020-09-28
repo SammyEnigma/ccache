@@ -21,6 +21,7 @@
 #include "TestUtil.hpp"
 
 #include "third_party/doctest.h"
+#include "third_party/fmt/core.h"
 
 using TestUtil::TestContext;
 

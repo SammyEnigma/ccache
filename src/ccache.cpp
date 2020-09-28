@@ -22,14 +22,13 @@
 #include "Args.hpp"
 #include "ArgsInfo.hpp"
 #include "Checksum.hpp"
-#include "Compression.hpp"
+#include "Config.hpp"
 #include "Context.hpp"
+#include "Digest.hpp"
 #include "Fd.hpp"
 #include "File.hpp"
 #include "Finalizer.hpp"
-#include "FormatNonstdStringView.hpp"
 #include "Hash.hpp"
-#include "Lockfile.hpp"
 #include "Logging.hpp"
 #include "Manifest.hpp"
 #include "MiniTrace.hpp"
@@ -39,18 +38,20 @@
 #include "ResultExtractor.hpp"
 #include "ResultRetriever.hpp"
 #include "SignalHandler.hpp"
+#include "Stat.hpp"
+#include "Statistics.hpp"
 #include "StdMakeUnique.hpp"
 #include "TemporaryFile.hpp"
 #include "UmaskScope.hpp"
 #include "Util.hpp"
 #include "argprocessing.hpp"
+#include "assertions.hpp"
 #include "cleanup.hpp"
 #include "compopt.hpp"
 #include "compress.hpp"
 #include "exceptions.hpp"
 #include "execute.hpp"
 #include "hashutil.hpp"
-#include "language.hpp"
 
 #include "third_party/fmt/core.h"
 #include "third_party/nonstd/optional.hpp"
@@ -71,6 +72,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <string>
+#include <utility>
+#include <vector>
 
 #ifndef MYNAME
 #  define MYNAME "ccache"

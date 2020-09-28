@@ -22,6 +22,12 @@
 
 #include "Result.hpp"
 
+#include "third_party/nonstd/optional.hpp"
+
+#include <string>
+
+class CacheEntryReader;
+
 // This class dumps information about the result entry to `stream`.
 class ResultDumper : public Result::Reader::Consumer
 {

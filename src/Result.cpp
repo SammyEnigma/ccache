@@ -21,6 +21,7 @@
 #include "AtomicFile.hpp"
 #include "CacheEntryReader.hpp"
 #include "CacheEntryWriter.hpp"
+#include "Compression.hpp"
 #include "Config.hpp"
 #include "Context.hpp"
 #include "Fd.hpp"
@@ -30,6 +31,9 @@
 #include "Statistics.hpp"
 #include "Util.hpp"
 #include "exceptions.hpp"
+
+#include "third_party/fmt/core.h"
+#include "third_party/nonstd/string_view.hpp"
 
 #include <algorithm>
 

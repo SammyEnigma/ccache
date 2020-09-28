@@ -19,8 +19,8 @@
 #include "ResultDumper.hpp"
 
 #include "CacheEntryReader.hpp"
-#include "Context.hpp"
-#include "Logging.hpp"
+
+#include "third_party/fmt/core.h"
 
 using nonstd::optional;
 

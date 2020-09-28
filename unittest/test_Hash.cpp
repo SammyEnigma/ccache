@@ -17,6 +17,7 @@
 // Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "../src/Hash.hpp"
+#include "Digest.hpp"
 
 #include "third_party/doctest.h"
 

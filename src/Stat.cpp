@@ -19,6 +19,7 @@
 #include "Stat.hpp"
 
 #include "Logging.hpp"
+#include "exceptions.hpp"
 
 using Logging::log;
 

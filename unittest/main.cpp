@@ -21,6 +21,8 @@
 
 #include "third_party/fmt/core.h"
 
+#include <string>
+
 #define DOCTEST_THREAD_LOCAL // Avoid MinGW thread_local bug
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "third_party/doctest.h"

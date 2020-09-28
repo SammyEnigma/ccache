@@ -19,7 +19,6 @@
 #include "Compression.hpp"
 
 #include "Config.hpp"
-#include "Context.hpp"
 #include "assertions.hpp"
 #include "exceptions.hpp"
 

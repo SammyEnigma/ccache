@@ -23,8 +23,6 @@
 #include "Fd.hpp"
 #include "Result.hpp"
 
-class Context;
-
 // This class extracts the parts of a result entry to a directory.
 class ResultExtractor : public Result::Reader::Consumer
 {

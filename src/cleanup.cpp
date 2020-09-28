@@ -22,7 +22,10 @@
 #include "CacheFile.hpp"
 #include "Config.hpp"
 #include "Context.hpp"
+#include "Counters.hpp"
 #include "Logging.hpp"
+#include "Stat.hpp"
+#include "Statistics.hpp"
 #include "Util.hpp"
 
 #ifdef INODE_CACHE_SUPPORTED
@@ -30,6 +33,8 @@
 #endif
 
 #include <algorithm>
+#include <memory>
+#include <vector>
 
 using Logging::log;
 

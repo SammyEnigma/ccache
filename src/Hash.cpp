@@ -21,6 +21,8 @@
 #include "Fd.hpp"
 #include "Logging.hpp"
 
+#include "third_party/fmt/core.h"
+
 using Logging::log;
 using nonstd::string_view;
 

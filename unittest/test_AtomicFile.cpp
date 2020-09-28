@@ -22,6 +22,8 @@
 
 #include "third_party/doctest.h"
 
+#include <vector>
+
 using TestUtil::TestContext;
 
 TEST_SUITE_BEGIN("AtomicFile");

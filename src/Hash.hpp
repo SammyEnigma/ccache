@@ -25,6 +25,8 @@
 #include "third_party/blake3/blake3.h"
 #include "third_party/nonstd/string_view.hpp"
 
+#include <string>
+
 // This class represents a hash state.
 class Hash
 {

@@ -19,6 +19,10 @@
 #include "ResultExtractor.hpp"
 
 #include "Util.hpp"
+#include "assertions.hpp"
+#include "exceptions.hpp"
+
+#include "third_party/fmt/core.h"
 
 ResultExtractor::ResultExtractor(const std::string& directory)
   : m_directory(directory)

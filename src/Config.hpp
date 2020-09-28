@@ -20,17 +20,12 @@
 
 #include "system.hpp"
 
-#include "NonCopyable.hpp"
-#include "Util.hpp"
-
 #include "third_party/nonstd/optional.hpp"
 
 #include <functional>
 #include <limits>
 #include <string>
 #include <unordered_map>
-
-class Config;
 
 class Config
 {

@@ -19,6 +19,7 @@
 #include "SignalHandler.hpp"
 
 #include "assertions.hpp"
+#include "signal.h"
 
 #ifndef _WIN32
 

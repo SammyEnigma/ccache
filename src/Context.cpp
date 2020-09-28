@@ -18,11 +18,9 @@
 
 #include "Context.hpp"
 
-#include "Counters.hpp"
 #include "Logging.hpp"
 #include "SignalHandler.hpp"
 #include "Util.hpp"
-#include "hashutil.hpp"
 
 #include <algorithm>
 #include <string>

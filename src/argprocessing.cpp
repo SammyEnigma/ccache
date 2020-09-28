@@ -18,14 +18,21 @@
 
 #include "argprocessing.hpp"
 
+#include "ArgsInfo.hpp"
+#include "Config.hpp"
 #include "Context.hpp"
-#include "FormatNonstdStringView.hpp"
 #include "Logging.hpp"
+#include "Stat.hpp"
+#include "Util.hpp"
 #include "assertions.hpp"
+#include "ccache.hpp"
 #include "compopt.hpp"
 #include "language.hpp"
 
-#include <cassert>
+#include "third_party/fmt/core.h"
+
+#include <algorithm>
+#include <string>
 
 using Logging::log;
 using nonstd::nullopt;

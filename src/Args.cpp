@@ -19,6 +19,10 @@
 #include "Args.hpp"
 
 #include "Util.hpp"
+#include "exceptions.hpp"
+
+#include <algorithm>
+#include <utility>
 
 using nonstd::nullopt;
 using nonstd::optional;

@@ -29,6 +29,8 @@
 #    include <sys/time.h>
 #  endif
 
+#  include "third_party/fmt/core.h"
+
 namespace {
 
 std::string

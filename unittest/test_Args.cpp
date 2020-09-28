@@ -17,9 +17,13 @@
 // Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "../src/Args.hpp"
+#include "../src/Util.hpp"
 #include "TestUtil.hpp"
 
 #include "third_party/doctest.h"
+
+#include <string>
+#include <utility>
 
 TEST_SUITE_BEGIN("Args");
 

@@ -20,8 +20,6 @@
 
 #include "system.hpp"
 
-#include "signal.h"
-
 class Context;
 
 class SignalHandler

@@ -21,7 +21,6 @@
 #include "system.hpp"
 
 #include "Stat.hpp"
-#include "exceptions.hpp"
 
 #include "third_party/nonstd/optional.hpp"
 

@@ -19,6 +19,7 @@
 #include "InodeCache.hpp"
 
 #include "Config.hpp"
+#include "Digest.hpp"
 #include "Fd.hpp"
 #include "Finalizer.hpp"
 #include "Hash.hpp"
@@ -27,10 +28,10 @@
 #include "TemporaryFile.hpp"
 #include "Util.hpp"
 
+#include "third_party/fmt/core.h"
+
 #include <atomic>
-#include <libgen.h>
 #include <sys/mman.h>
-#include <type_traits>
 
 using Logging::log;
 

@@ -20,20 +20,20 @@
 
 #include "system.hpp"
 
-#include "CacheFile.hpp"
+#include "Stat.hpp"
 
 #include "third_party/nonstd/optional.hpp"
 #include "third_party/nonstd/string_view.hpp"
 
-#include <algorithm>
 #include <functional>
 #include <ios>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
+class CacheFile;
 class Context;
+struct tm;
 
 namespace Util {
 

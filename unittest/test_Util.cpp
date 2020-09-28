@@ -16,15 +16,20 @@
 // this program; if not, write to the Free Software Foundation, Inc., 51
 // Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include "../src/Config.hpp"
+#include "../src/CacheFile.hpp"
 #include "../src/Fd.hpp"
+#include "../src/Stat.hpp"
 #include "../src/Util.hpp"
 #include "TestUtil.hpp"
 
 #include "third_party/doctest.h"
+#include "third_party/fmt/core.h"
 #include "third_party/nonstd/optional.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 
 using doctest::Approx;
 using nonstd::nullopt;

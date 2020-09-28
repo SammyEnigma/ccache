@@ -18,6 +18,9 @@
 
 #include "CacheEntryWriter.hpp"
 
+#include "Compressor.hpp"
+#include "exceptions.hpp"
+
 CacheEntryWriter::CacheEntryWriter(FILE* stream,
                                    const uint8_t magic[4],
                                    uint8_t version,

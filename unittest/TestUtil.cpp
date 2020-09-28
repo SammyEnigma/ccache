@@ -21,6 +21,8 @@
 #include "../src/Util.hpp"
 #include "../src/exceptions.hpp"
 
+#include "third_party/fmt/core.h"
+
 namespace TestUtil {
 
 size_t TestContext::m_subdir_counter = 0;

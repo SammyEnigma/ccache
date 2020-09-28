@@ -20,6 +20,8 @@
 
 #include "third_party/doctest.h"
 
+#include <string>
+
 using nonstd::string_view;
 
 TEST_SUITE_BEGIN("FormatNonstdStringView");

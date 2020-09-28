@@ -20,8 +20,6 @@
 
 #include "system.hpp"
 
-#include "exceptions.hpp"
-
 #include <string>
 
 class Stat

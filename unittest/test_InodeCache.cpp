@@ -18,12 +18,16 @@
 
 #include "../src/Config.hpp"
 #include "../src/Context.hpp"
+#include "../src/Digest.hpp"
 #include "../src/Hash.hpp"
 #include "../src/InodeCache.hpp"
+#include "../src/Stat.hpp"
 #include "../src/Util.hpp"
 #include "TestUtil.hpp"
 
 #include "third_party/doctest.h"
+
+#include <string>
 
 using TestUtil::TestContext;
 

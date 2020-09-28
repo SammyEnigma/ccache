@@ -18,6 +18,7 @@
 
 #include "assertions.hpp"
 
+#include "FormatNonstdStringView.hpp"
 #include "Util.hpp"
 
 #include "third_party/fmt/core.h"

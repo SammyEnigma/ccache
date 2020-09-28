@@ -20,11 +20,10 @@
 
 #include "system.hpp"
 
-#include "Fd.hpp"
-
 #include <string>
 
 class Context;
+class Fd;
 
 int execute(const char* const* argv, Fd&& fd_out, Fd&& fd_err, pid_t* pid);
 

@@ -22,15 +22,26 @@
 #include "CacheEntryReader.hpp"
 #include "CacheEntryWriter.hpp"
 #include "Checksum.hpp"
+#include "Compression.hpp"
 #include "Config.hpp"
 #include "Context.hpp"
 #include "Digest.hpp"
 #include "File.hpp"
 #include "Hash.hpp"
 #include "Logging.hpp"
+#include "Stat.hpp"
 #include "StdMakeUnique.hpp"
+#include "Util.hpp"
 #include "ccache.hpp"
+#include "exceptions.hpp"
 #include "hashutil.hpp"
+
+#include "third_party/fmt/core.h"
+
+#include <algorithm>
+#include <memory>
+#include <utility>
+#include <vector>
 
 // Manifest data format
 // ====================

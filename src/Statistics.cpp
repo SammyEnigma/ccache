@@ -22,8 +22,15 @@
 #include "Config.hpp"
 #include "Lockfile.hpp"
 #include "Logging.hpp"
+#include "Stat.hpp"
 #include "Util.hpp"
 #include "exceptions.hpp"
+
+#include "third_party/fmt/core.h"
+
+#include <algorithm>
+#include <tuple>
+#include <utility>
 
 using Logging::log;
 using nonstd::nullopt;

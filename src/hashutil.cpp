@@ -21,11 +21,13 @@
 #include "Args.hpp"
 #include "Config.hpp"
 #include "Context.hpp"
+#include "Digest.hpp"
 #include "Hash.hpp"
 #include "Logging.hpp"
 #include "Stat.hpp"
+#include "Util.hpp"
 #include "ccache.hpp"
-#include "execute.hpp"
+#include "exceptions.hpp"
 #include "macroskip.hpp"
 
 #ifdef INODE_CACHE_SUPPORTED

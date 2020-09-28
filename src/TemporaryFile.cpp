@@ -19,6 +19,7 @@
 #include "TemporaryFile.hpp"
 
 #include "Util.hpp"
+#include "exceptions.hpp"
 
 using nonstd::string_view;
 

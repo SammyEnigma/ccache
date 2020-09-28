@@ -22,8 +22,8 @@
 
 #include "third_party/nonstd/optional.hpp"
 
-#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 class CacheEntryReader;

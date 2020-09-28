@@ -21,21 +21,29 @@
 #include "AtomicFile.hpp"
 #include "CacheEntryReader.hpp"
 #include "CacheEntryWriter.hpp"
+#include "CacheFile.hpp"
+#include "Compression.hpp"
+#include "Config.hpp"
 #include "Context.hpp"
 #include "File.hpp"
 #include "Logging.hpp"
 #include "Manifest.hpp"
 #include "Result.hpp"
+#include "Stat.hpp"
 #include "Statistics.hpp"
 #include "StdMakeUnique.hpp"
 #include "ThreadPool.hpp"
 #include "ZstdCompressor.hpp"
 #include "assertions.hpp"
+#include "exceptions.hpp"
 
 #include "third_party/fmt/core.h"
 
+#include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 using Logging::log;
 using nonstd::optional;

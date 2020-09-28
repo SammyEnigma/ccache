@@ -20,6 +20,9 @@
 
 #include "Context.hpp"
 #include "Logging.hpp"
+#include "Util.hpp"
+#include "assertions.hpp"
+#include "exceptions.hpp"
 
 using Logging::log;
 using Result::FileType;

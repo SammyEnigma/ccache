@@ -21,12 +21,14 @@
 #include "../src/Context.hpp"
 #include "../src/Statistics.hpp"
 #include "../src/Util.hpp"
+#include "../src/ccache.hpp"
 #include "TestUtil.hpp"
 #include "argprocessing.hpp"
 
 #include "third_party/doctest.h"
+#include "third_party/fmt/core.h"
 
-#include <algorithm>
+#include <string>
 
 using TestUtil::TestContext;
 

@@ -19,7 +19,7 @@
 #include "Config.hpp"
 
 #include "AtomicFile.hpp"
-#include "Compression.hpp"
+#include "Stat.hpp"
 #include "Util.hpp"
 #include "assertions.hpp"
 #include "ccache.hpp"
@@ -28,9 +28,7 @@
 #include "third_party/fmt/core.h"
 
 #include <algorithm>
-#include <cassert>
 #include <fstream>
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>

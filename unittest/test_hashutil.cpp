@@ -18,6 +18,7 @@
 
 #include "../src/Context.hpp"
 #include "../src/Hash.hpp"
+#include "../src/Util.hpp"
 #include "../src/hashutil.hpp"
 #include "TestUtil.hpp"
 

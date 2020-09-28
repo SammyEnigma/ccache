@@ -22,8 +22,6 @@
 #include "Config.hpp"
 #include "File.hpp"
 #include "Util.hpp"
-#include "exceptions.hpp"
-#include "execute.hpp"
 
 #ifdef HAVE_SYSLOG_H
 #  include <syslog.h>

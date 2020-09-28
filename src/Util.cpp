@@ -18,12 +18,18 @@
 
 #include "Util.hpp"
 
+#include "CacheFile.hpp"
 #include "Config.hpp"
 #include "Context.hpp"
 #include "Fd.hpp"
-#include "FormatNonstdStringView.hpp"
 #include "Logging.hpp"
 #include "TemporaryFile.hpp"
+#include "assertions.hpp"
+#include "exceptions.hpp"
+
+#include "third_party/fmt/core.h"
+
+#include <utility>
 
 extern "C" {
 #include "third_party/base32hex.h"

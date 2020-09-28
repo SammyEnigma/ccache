@@ -23,6 +23,9 @@
 #include "Fd.hpp"
 #include "Result.hpp"
 
+#include "third_party/nonstd/optional.hpp"
+
+class CacheEntryReader;
 class Context;
 
 // This class retrieves a result entry to the local file system.

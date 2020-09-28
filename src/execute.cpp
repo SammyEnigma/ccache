@@ -25,15 +25,17 @@
 #include "Logging.hpp"
 #include "SignalHandler.hpp"
 #include "Stat.hpp"
-#include "TemporaryFile.hpp"
 #include "Util.hpp"
+#include "assertions.hpp"
+#include "exceptions.hpp"
+
+#include "third_party/fmt/core.h"
 
 #ifdef _WIN32
 #  include "Win32Util.hpp"
 #endif
 
 using Logging::log;
-using nonstd::string_view;
 
 #ifdef _WIN32
 int

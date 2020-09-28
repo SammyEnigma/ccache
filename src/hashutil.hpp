@@ -24,7 +24,6 @@
 
 #include <string>
 
-class Config;
 class Context;
 class Hash;
 

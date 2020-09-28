@@ -25,7 +25,6 @@
 #include <string>
 
 class Config;
-class Context;
 class Digest;
 
 class InodeCache

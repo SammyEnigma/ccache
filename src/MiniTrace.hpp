@@ -22,9 +22,7 @@
 
 #include "third_party/minitrace.h"
 
-#ifdef MTR_ENABLED
-
-#  include <string>
+#include <string>
 
 struct ArgsInfo;
 
@@ -39,5 +37,3 @@ private:
   const void* const m_trace_id;
   std::string m_tmp_trace_file;
 };
-
-#endif
