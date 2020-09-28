@@ -36,6 +36,7 @@
 
 #ifdef _WIN32
 #  include "Win32Util.hpp"
+#  include "execute.hpp"
 #endif
 
 // With older GCC (libgcc), __builtin_cpu_supports("avx2) returns true if AVX2

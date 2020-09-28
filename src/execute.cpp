@@ -32,6 +32,7 @@
 #include "third_party/fmt/core.h"
 
 #ifdef _WIN32
+#  include "TemporaryFile.hpp"
 #  include "Win32Util.hpp"
 #endif
 
