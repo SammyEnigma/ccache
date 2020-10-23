@@ -612,6 +612,54 @@ process_preprocessed_file(Context& ctx,
   return true;
 }
 
+nonstd::optional<std::string>
+rewrite_dep_file_paths(const Context& ctx, const std::string& file_content)
+{
+  ASSERT(!ctx.config.base_dir().empty());
+  ASSERT(ctx.has_absolute_include_headers);
+
+  // Fast path for the common case:
+  if (file_content.find(ctx.config.base_dir()) == std::string::npos) {
+    return nonstd::nullopt;
+  }
+
+  std::string adjusted_file_content;
+  adjusted_file_content.reserve(file_content.size());
+
+  bool content_rewritten = false;
+  for (const auto& line : Util::split_into_views(file_content, "\n")) {
+    const auto tokens = Util::split_into_views(line, " \t");
+    for (size_t i = 0; i < tokens.size(); ++i) {
+      DEBUG_ASSERT(line.length() > 0); // line.empty() -> no tokens
+      if (i > 0 || line[0] == ' ' || line[0] == '\t') {
+        adjusted_file_content.push_back(' ');
+      }
+
+      const auto& token = tokens[i];
+      bool token_rewritten = false;
+      if (Util::is_absolute_path(token)) {
+        const auto new_path = Util::make_relative_path(ctx, token);
+        if (new_path != token) {
+          adjusted_file_content.append(new_path);
+          token_rewritten = true;
+        }
+      }
+      if (token_rewritten) {
+        content_rewritten = true;
+      } else {
+        adjusted_file_content.append(token.begin(), token.end());
+      }
+    }
+    adjusted_file_content.push_back('\n');
+  }
+
+  if (content_rewritten) {
+    return adjusted_file_content;
+  } else {
+    return nonstd::nullopt;
+  }
+}
+
 // Replace absolute paths with relative paths in the provided dependency file.
 static void
 use_relative_paths_in_depfile(const Context& ctx)
@@ -633,33 +681,12 @@ use_relative_paths_in_depfile(const Context& ctx)
     log("Cannot open dependency file {}: {}", output_dep, e.what());
     return;
   }
-
-  std::string adjusted_file_content;
-  adjusted_file_content.reserve(file_content.size());
-
-  bool rewritten = false;
-
-  for (string_view token : Util::split_into_views(file_content, " \t\r\n")) {
-    if (Util::is_absolute_path(token)
-        && token.starts_with(ctx.config.base_dir())) {
-      adjusted_file_content.append(Util::make_relative_path(ctx, token));
-      rewritten = true;
-    } else {
-      adjusted_file_content.append(token.begin(), token.end());
-    }
-    adjusted_file_content.push_back(' ');
+  const auto new_content = rewrite_dep_file_paths(ctx, file_content);
+  if (new_content) {
+    Util::write_file(output_dep, *new_content);
+  } else {
+    log("No paths in dependency file {} made relative", output_dep);
   }
-
-  if (!rewritten) {
-    log(
-      "No paths in dependency file {} made relative, skip relative path usage",
-      output_dep);
-    return;
-  }
-
-  std::string tmp_file = output_dep + ".tmp";
-  Util::write_file(tmp_file, adjusted_file_content);
-  Util::rename(tmp_file, output_dep);
 }
 
 // Extract the used includes from the dependency file. Note that we cannot
@@ -843,11 +870,49 @@ create_cachedir_tag(const Context& ctx)
   }
 }
 
+struct FindCoverageFileResult
+{
+  bool found;
+  std::string path;
+  bool mangled;
+};
+
+static FindCoverageFileResult
+find_coverage_file(const Context& ctx)
+{
+  // GCC 9+ writes coverage data for /dir/to/example.o to #dir#to#example.gcno
+  // (in CWD) if -fprofile-dir=DIR is present (regardless of DIR) instead of the
+  // traditional /dir/to/example.gcno.
+
+  std::string mangled_form = Result::gcno_file_in_mangled_form(ctx);
+  std::string unmangled_form = Result::gcno_file_in_unmangled_form(ctx);
+  std::string found_file;
+  if (Stat::stat(mangled_form)) {
+    log("Found coverage file {}", mangled_form);
+    found_file = mangled_form;
+  }
+  if (Stat::stat(unmangled_form)) {
+    log("Found coverage file {}", unmangled_form);
+    if (!found_file.empty()) {
+      log("Found two coverage files, cannot continue");
+      return {};
+    }
+    found_file = unmangled_form;
+  }
+  if (found_file.empty()) {
+    log("No coverage file found (tried {} and {}), cannot continue",
+        unmangled_form,
+        mangled_form);
+    return {};
+  }
+  return {true, found_file, found_file == mangled_form};
+}
+
 // Run the real compiler and put the result in cache.
 static void
 to_cache(Context& ctx,
          Args& args,
-         Args& depend_extra_args,
+         const Args& depend_extra_args,
          Hash* depend_mode_hash)
 {
   args.push_back("-o");
@@ -996,7 +1061,14 @@ to_cache(Context& ctx,
     result_writer.write(Result::FileType::dependency, ctx.args_info.output_dep);
   }
   if (ctx.args_info.generating_coverage) {
-    result_writer.write(Result::FileType::coverage, ctx.args_info.output_cov);
+    const auto coverage_file = find_coverage_file(ctx);
+    if (!coverage_file.found) {
+      throw Failure(Statistic::internal_error);
+    }
+    result_writer.write(coverage_file.mangled
+                          ? Result::FileType::coverage_mangled
+                          : Result::FileType::coverage_unmangled,
+                        coverage_file.path);
   }
   if (ctx.args_info.generating_stackusage) {
     result_writer.write(Result::FileType::stackusage, ctx.args_info.output_su);
@@ -1249,6 +1321,22 @@ hash_common_info(const Context& ctx,
   hash.hash_delimiter("cc_name");
   hash.hash(Util::base_name(args[0]));
 
+  // Hash variables that may affect the compilation.
+  const char* always_hash_env_vars[] = {
+    // From <https://gcc.gnu.org/onlinedocs/gcc/Environment-Variables.html>:
+    "COMPILER_PATH",
+    "GCC_COMPARE_DEBUG",
+    "GCC_EXEC_PREFIX",
+    "SOURCE_DATE_EPOCH",
+  };
+  for (const char* name : always_hash_env_vars) {
+    const char* value = getenv(name);
+    if (value) {
+      hash.hash_delimiter(name);
+      hash.hash(value);
+    }
+  }
+
   if (!(ctx.config.sloppiness() & SLOPPY_LOCALE)) {
     // Hash environment variables that may affect localization of compiler
     // warning messages.
@@ -1473,13 +1561,13 @@ calculate_result_name(Context& ctx,
     // might not be the case.
     if (!direct_mode && !ctx.args_info.output_is_precompiled_header
         && !ctx.args_info.using_precompiled_header) {
-      if (compopt_affects_cpp(args[i])) {
+      if (compopt_affects_cpp_output(args[i])) {
         if (compopt_takes_arg(args[i])) {
           i++;
         }
         continue;
       }
-      if (compopt_short(compopt_affects_cpp, args[i])) {
+      if (compopt_affects_cpp_output(args[i].substr(0, 2))) {
         continue;
       }
     }
@@ -1753,36 +1841,50 @@ from_cache(Context& ctx, FromCacheCallMode mode)
                                            : Statistic::preprocessed_cache_hit;
 }
 
-// Find the real compiler. We just search the PATH to find an executable of the
-// same name that isn't a link to ourselves.
-static void
-find_compiler(Context& ctx, const char* const* argv)
+// Find the real compiler and put it into ctx.orig_args[0]. We just search the
+// PATH to find an executable of the same name that isn't a link to ourselves.
+// Pass find_executable function as second parameter.
+void
+find_compiler(Context& ctx,
+              const FindExecutableFunction& find_executable_function)
 {
-  // We might be being invoked like "ccache gcc -c foo.c".
-  std::string base(Util::base_name(argv[0]));
-  if (Util::same_program_name(base, CCACHE_NAME)) {
-    ctx.orig_args.pop_front();
-    if (Util::is_full_path(ctx.orig_args[0])) {
-      return;
-    }
-    base = std::string(Util::base_name(ctx.orig_args[0]));
+  // gcc --> 0
+  // ccache gcc --> 1
+  // ccache ccache gcc --> 2
+  size_t compiler_pos = 0;
+  while (compiler_pos < ctx.orig_args.size()
+         && Util::same_program_name(
+           Util::base_name(ctx.orig_args[compiler_pos]), CCACHE_NAME)) {
+    compiler_pos++;
   }
 
   // Support user override of the compiler.
-  if (!ctx.config.compiler().empty()) {
-    base = ctx.config.compiler();
+  const std::string compiler =
+    !ctx.config.compiler().empty()
+      ? ctx.config.compiler()
+      // In case ccache is masquerading as compiler,
+      // use only base_name so the real compiler can be determined.
+      : compiler_pos == 0 ? std::string(Util::base_name(ctx.orig_args[0]))
+                          : ctx.orig_args[compiler_pos];
+
+  const std::string resolved_compiler =
+    Util::is_full_path(compiler)
+      ? compiler
+      : find_executable_function(ctx, compiler, CCACHE_NAME);
+
+  if (resolved_compiler.empty()) {
+    throw Fatal("Could not find compiler \"{}\" in PATH", compiler);
   }
 
-  std::string compiler = find_executable(ctx, base, CCACHE_NAME);
-  if (compiler.empty()) {
-    throw Fatal("Could not find compiler \"{}\" in PATH", base);
-  }
-  if (compiler == argv[0]) {
+  if (Util::same_program_name(Util::base_name(resolved_compiler),
+                              CCACHE_NAME)) {
     throw Fatal(
       "Recursive invocation (the name of the ccache binary must be \"{}\")",
       CCACHE_NAME);
   }
-  ctx.orig_args[0] = compiler;
+
+  ctx.orig_args.pop_front(compiler_pos);
+  ctx.orig_args[0] = resolved_compiler;
 }
 
 static std::string
@@ -1982,11 +2084,11 @@ update_stats_and_maybe_move_cache_file(const Context& ctx,
   // Use stats file in the level one subdirectory for cache bookkeeping counters
   // since cleanup is performed on level one. Use stats file in the level two
   // subdirectory for other counters to reduce lock contention.
-  const bool updated_file_size_or_count =
+  const bool use_stats_on_level_1 =
     counter_updates.get(Statistic::cache_size_kibibyte) != 0
     || counter_updates.get(Statistic::files_in_cache) != 0;
   std::string level_string = fmt::format("{:x}", name.bytes()[0] >> 4);
-  if (!updated_file_size_or_count) {
+  if (!use_stats_on_level_1) {
     level_string += fmt::format("/{:x}", name.bytes()[0] & 0xF);
   }
   const auto stats_file =
@@ -2000,18 +2102,23 @@ update_stats_and_maybe_move_cache_file(const Context& ctx,
     return nullopt;
   }
 
-  const auto wanted_level =
-    calculate_wanted_cache_level(counters->get(Statistic::files_in_cache));
-  const auto wanted_path = Util::get_path_in_cache(
-    ctx.config.cache_dir(), wanted_level, name.to_string() + file_suffix);
-  if (current_path != wanted_path) {
-    Util::ensure_dir_exists(Util::dir_name(wanted_path));
-    log("Moving {} to {}", current_path, wanted_path);
-    try {
-      Util::rename(current_path, wanted_path);
-    } catch (const Error&) {
-      // Two ccache processes may move the file at the same time, so failure to
-      // rename is OK.
+  if (use_stats_on_level_1) {
+    // Only consider moving the cache file to another level when we have read
+    // the level 1 stats file since it's only then we know the proper
+    // files_in_cache value.
+    const auto wanted_level =
+      calculate_wanted_cache_level(counters->get(Statistic::files_in_cache));
+    const auto wanted_path = Util::get_path_in_cache(
+      ctx.config.cache_dir(), wanted_level, name.to_string() + file_suffix);
+    if (current_path != wanted_path) {
+      Util::ensure_dir_exists(Util::dir_name(wanted_path));
+      log("Moving {} to {}", current_path, wanted_path);
+      try {
+        Util::rename(current_path, wanted_path);
+      } catch (const Error&) {
+        // Two ccache processes may move the file at the same time, so failure
+        // to rename is OK.
+      }
     }
   }
   return counters;
@@ -2137,7 +2244,7 @@ cache_compilation(int argc, const char* const* argv)
     initialize(ctx, argc, argv);
 
     MTR_BEGIN("main", "find_compiler");
-    find_compiler(ctx, argv);
+    find_compiler(ctx, &find_executable);
     MTR_END("main", "find_compiler");
 
     try {
@@ -2244,7 +2351,7 @@ do_cache_compilation(Context& ctx, const char* const* argv)
     log("Dependency file: {}", ctx.args_info.output_dep);
   }
   if (ctx.args_info.generating_coverage) {
-    log("Coverage file: {}", ctx.args_info.output_cov);
+    log("Coverage file is being generated");
   }
   if (ctx.args_info.generating_stackusage) {
     log("Stack usage file: {}", ctx.args_info.output_su);

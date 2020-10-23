@@ -78,7 +78,9 @@ extern "C" {
 #ifdef __APPLE__
 #  ifdef HAVE_SYS_CLONEFILE_H
 #    include <sys/clonefile.h>
-#    define FILE_CLONING_SUPPORTED 1
+#    ifdef CLONE_NOOWNERCOPY
+#      define FILE_CLONING_SUPPORTED 1
+#    endif
 #  endif
 #endif
 
@@ -290,7 +292,7 @@ clone_hard_link_or_copy_file(const Context& ctx,
       log("Failed to clone: {}", e.what());
     }
 #else
-    log("Not cloning {} to {} since it's unsupported");
+    log("Not cloning {} to {} since it's unsupported", source, dest);
 #endif
   }
   if (ctx.config.hard_link()) {
@@ -502,14 +504,14 @@ fallocate(int fd, long new_size)
 
 void
 for_each_level_1_subdir(const std::string& cache_dir,
-                        const SubdirVisitor& subdir_visitor,
+                        const SubdirVisitor& visitor,
                         const ProgressReceiver& progress_receiver)
 {
   for (int i = 0; i <= 0xF; i++) {
     double progress = 1.0 * i / 16;
     progress_receiver(progress);
     std::string subdir_path = fmt::format("{}/{:x}", cache_dir, i);
-    subdir_visitor(subdir_path, [&](double inner_progress) {
+    visitor(subdir_path, [&](double inner_progress) {
       progress_receiver(progress + inner_progress / 16);
     });
   }
@@ -874,11 +876,14 @@ make_relative_path(const Context& ctx, string_view path)
   std::string normalized_path = Util::normalize_absolute_path(path_str);
   std::vector<std::string> relpath_candidates = {
     Util::get_relative_path(ctx.actual_cwd, normalized_path),
-    Util::get_relative_path(ctx.apparent_cwd, normalized_path),
   };
-  // Move best (= shortest) match first:
-  if (relpath_candidates[0].length() > relpath_candidates[1].length()) {
-    std::swap(relpath_candidates[0], relpath_candidates[1]);
+  if (ctx.apparent_cwd != ctx.actual_cwd) {
+    relpath_candidates.emplace_back(
+      Util::get_relative_path(ctx.apparent_cwd, normalized_path));
+    // Move best (= shortest) match first:
+    if (relpath_candidates[0].length() > relpath_candidates[1].length()) {
+      std::swap(relpath_candidates[0], relpath_candidates[1]);
+    }
   }
 
   for (const auto& relpath : relpath_candidates) {
@@ -1245,13 +1250,14 @@ rename(const std::string& oldpath, const std::string& newpath)
 }
 
 bool
-same_program_name(const std::string& program_name,
-                  const std::string& canonical_program_name)
+same_program_name(nonstd::string_view program_name,
+                  nonstd::string_view canonical_program_name)
 {
 #ifdef _WIN32
   std::string lowercase_program_name = Util::to_lowercase(program_name);
   return lowercase_program_name == canonical_program_name
-         || lowercase_program_name == (canonical_program_name + ".exe");
+         || lowercase_program_name
+              == fmt::format("{}.exe", canonical_program_name);
 #else
   return program_name == canonical_program_name;
 #endif

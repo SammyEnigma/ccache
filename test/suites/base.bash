@@ -17,11 +17,36 @@ base_tests() {
     expect_equal_object_files reference_test1.o test1.o
 
     # -------------------------------------------------------------------------
+    TEST "ccache ccache gcc"
+    # e.g. due to some suboptimal setup, scripts etc.
+    # Source: https://github.com/ccache/ccache/issues/686
+
+    $REAL_COMPILER -c -o reference_test1.o test1.c
+
+    $CCACHE $COMPILER -c test1.c
+    expect_stat 'cache hit (preprocessed)' 0
+    expect_stat 'cache miss' 1
+    expect_stat 'files in cache' 1
+    expect_equal_object_files reference_test1.o test1.o
+
+    $CCACHE $CCACHE $COMPILER -c test1.c
+    expect_stat 'cache hit (preprocessed)' 1
+    expect_stat 'cache miss' 1
+    expect_stat 'files in cache' 1
+    expect_equal_object_files reference_test1.o test1.o
+
+    $CCACHE $CCACHE $CCACHE $COMPILER -c test1.c
+    expect_stat 'cache hit (preprocessed)' 2
+    expect_stat 'cache miss' 1
+    expect_stat 'files in cache' 1
+    expect_equal_object_files reference_test1.o test1.o
+
+    # -------------------------------------------------------------------------
     TEST "Version output readable"
 
     # The exact output is not tested, but at least it's something human readable
     # and not random memory.
-    if [ $($CCACHE --version | grep -c '^ccache version [a-zA-Z0-9_./-]*$') -ne 1 ]; then
+    if [ $($CCACHE --version | grep -c '^ccache version [a-zA-Z0-9_./+-]*$') -ne 1 ]; then
         test_failed "Unexpected output of --version"
     fi
 
@@ -723,6 +748,35 @@ b"
     $CCACHE_COMPILE -c test1.s
     expect_stat 'cache hit (preprocessed)' 2
     expect_stat 'cache miss' 2
+
+    # -------------------------------------------------------------------------
+    TEST "CCACHE_COMPILER"
+
+    $REAL_COMPILER -c -o reference_test1.o test1.c
+
+    $CCACHE_COMPILE -c test1.c
+    expect_stat 'cache hit (preprocessed)' 0
+    expect_stat 'cache miss' 1
+    expect_stat 'files in cache' 1
+    expect_equal_object_files reference_test1.o test1.o
+
+    CCACHE_COMPILER=$COMPILER $CCACHE non_existing_compiler_will_be_overridden_anyway -c test1.c
+    expect_stat 'cache hit (preprocessed)' 1
+    expect_stat 'cache miss' 1
+    expect_stat 'files in cache' 1
+    expect_equal_object_files reference_test1.o test1.o
+
+    CCACHE_COMPILER=$COMPILER $CCACHE same/for/relative -c test1.c
+    expect_stat 'cache hit (preprocessed)' 2
+    expect_stat 'cache miss' 1
+    expect_stat 'files in cache' 1
+    expect_equal_object_files reference_test1.o test1.o
+
+    CCACHE_COMPILER=$COMPILER $CCACHE /and/even/absolute/compilers -c test1.c
+    expect_stat 'cache hit (preprocessed)' 3
+    expect_stat 'cache miss' 1
+    expect_stat 'files in cache' 1
+    expect_equal_object_files reference_test1.o test1.o
 
     # -------------------------------------------------------------------------
     TEST "CCACHE_PATH"

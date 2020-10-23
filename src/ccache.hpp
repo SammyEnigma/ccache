@@ -21,6 +21,13 @@
 
 #include "system.hpp"
 
+#include "third_party/nonstd/optional.hpp"
+
+#include <functional>
+#include <string>
+
+class Context;
+
 extern const char CCACHE_VERSION[];
 
 enum class GuessedCompiler { clang, gcc, nvcc, pump, unknown };
@@ -44,3 +51,14 @@ const uint32_t SLOPPY_CLANG_INDEX_STORE = 1 << 7;
 const uint32_t SLOPPY_LOCALE = 1 << 8;
 // Allow caching even if -fmodules is used.
 const uint32_t SLOPPY_MODULES = 1 << 9;
+
+using FindExecutableFunction =
+  std::function<std::string(const Context& ctx,
+                            const std::string& name,
+                            const std::string& exclude_name)>;
+
+// Tested by unit tests.
+void find_compiler(Context& ctx,
+                   const FindExecutableFunction& find_executable_function);
+nonstd::optional<std::string>
+rewrite_dep_file_paths(const Context& ctx, const std::string& file_content);

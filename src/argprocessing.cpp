@@ -325,9 +325,9 @@ process_arg(Context& ctx,
       && (args[i + 1] == "-emit-pch" || args[i + 1] == "-emit-pth"
           || args[i + 1] == "-include-pch" || args[i + 1] == "-include-pth"
           || args[i + 1] == "-fno-pch-timestamp")) {
-    if (compopt_affects_comp(args[i + 1])) {
+    if (compopt_affects_compiler_output(args[i + 1])) {
       state.compiler_only_args.push_back(args[i]);
-    } else if (compopt_affects_cpp(args[i + 1])) {
+    } else if (compopt_affects_cpp_output(args[i + 1])) {
       state.cpp_args.push_back(args[i]);
     } else {
       state.common_args.push_back(args[i]);
@@ -336,7 +336,7 @@ process_arg(Context& ctx,
   }
 
   // Handle options that should not be passed to the preprocessor.
-  if (compopt_affects_comp(args[i])) {
+  if (compopt_affects_compiler_output(args[i])) {
     state.compiler_only_args.push_back(args[i]);
     if (compopt_takes_arg(args[i])
         || (ctx.guessed_compiler == GuessedCompiler::nvcc
@@ -350,7 +350,7 @@ process_arg(Context& ctx,
     }
     return nullopt;
   }
-  if (compopt_prefix_affects_comp(args[i])) {
+  if (compopt_prefix_affects_compiler_output(args[i])) {
     state.compiler_only_args.push_back(args[i]);
     return nullopt;
   }
@@ -396,29 +396,31 @@ process_arg(Context& ctx,
     return nullopt;
   }
 
-  if (args[i].length() >= 3 && Util::starts_with(args[i], "-x")
-      && !islower(args[i][2])) {
-    // -xCODE (where CODE can be e.g. Host or CORE-AVX2, always starting with an
-    // uppercase letter) is an ordinary Intel compiler option, not a language
-    // specification. (GCC's "-x" language argument is always lowercase.)
-    state.common_args.push_back(args[i]);
-    return nullopt;
-  }
-
-  // Special handling for -x: remember the last specified language before the
-  // input file and strip all -x options from the arguments.
-  if (args[i] == "-x") {
-    if (i == args.size() - 1) {
-      log("Missing argument to {}", args[i]);
-      return Statistic::bad_compiler_arguments;
-    }
-    if (args_info.input_file.empty()) {
-      state.explicit_language = args[i + 1];
-    }
-    i++;
-    return nullopt;
-  }
   if (Util::starts_with(args[i], "-x")) {
+    if (args[i].length() >= 3 && !islower(args[i][2])) {
+      // -xCODE (where CODE can be e.g. Host or CORE-AVX2, always starting with
+      // an uppercase letter) is an ordinary Intel compiler option, not a
+      // language specification. (GCC's "-x" language argument is always
+      // lowercase.)
+      state.common_args.push_back(args[i]);
+      return nullopt;
+    }
+
+    // Special handling for -x: remember the last specified language before the
+    // input file and strip all -x options from the arguments.
+    if (args[i].length() == 2) {
+      if (i == args.size() - 1) {
+        log("Missing argument to {}", args[i]);
+        return Statistic::bad_compiler_arguments;
+      }
+      if (args_info.input_file.empty()) {
+        state.explicit_language = args[i + 1];
+      }
+      i++;
+      return nullopt;
+    }
+
+    DEBUG_ASSERT(args[i].length() >= 3);
     if (args_info.input_file.empty()) {
       state.explicit_language = args[i].substr(2);
     }
@@ -766,7 +768,7 @@ process_arg(Context& ctx,
 
     std::string relpath = Util::make_relative_path(ctx, args[i + next]);
     auto& dest_args =
-      compopt_affects_cpp(args[i]) ? state.cpp_args : state.common_args;
+      compopt_affects_cpp_output(args[i]) ? state.cpp_args : state.common_args;
     dest_args.push_back(args[i]);
     if (next == 2) {
       dest_args.push_back(args[i + 1]);
@@ -787,7 +789,7 @@ process_arg(Context& ctx,
         auto relpath =
           Util::make_relative_path(ctx, string_view(args[i]).substr(slash_pos));
         std::string new_option = option + relpath;
-        if (compopt_affects_cpp(option)) {
+        if (compopt_affects_cpp_output(option)) {
           state.cpp_args.push_back(new_option);
         } else {
           state.common_args.push_back(new_option);
@@ -804,7 +806,7 @@ process_arg(Context& ctx,
       return Statistic::bad_compiler_arguments;
     }
 
-    if (compopt_affects_cpp(args[i])) {
+    if (compopt_affects_cpp_output(args[i])) {
       state.cpp_args.push_back(args[i]);
       state.cpp_args.push_back(args[i + 1]);
     } else {
@@ -818,7 +820,8 @@ process_arg(Context& ctx,
 
   // Other options.
   if (args[i][0] == '-') {
-    if (compopt_affects_cpp(args[i]) || compopt_prefix_affects_cpp(args[i])) {
+    if (compopt_affects_cpp_output(args[i])
+        || compopt_prefix_affects_cpp_output(args[i])) {
       state.cpp_args.push_back(args[i]);
     } else {
       state.common_args.push_back(args[i]);
@@ -1147,11 +1150,6 @@ process_args(Context& ctx)
       state.dep_args.push_back("-MQ");
       state.dep_args.push_back(args_info.output_obj);
     }
-  }
-
-  if (args_info.generating_coverage) {
-    auto gcda_path = Util::change_extension(args_info.output_obj, ".gcno");
-    args_info.output_cov = Util::make_relative_path(ctx, gcda_path);
   }
 
   if (args_info.generating_stackusage) {

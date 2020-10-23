@@ -30,6 +30,8 @@
 #include "exceptions.hpp"
 #include "macroskip.hpp"
 
+#include "third_party/blake3/blake3_cpu_supports_avx2.h"
+
 #ifdef INODE_CACHE_SUPPORTED
 #  include "InodeCache.hpp"
 #endif
@@ -37,21 +39,6 @@
 #ifdef _WIN32
 #  include "Win32Util.hpp"
 #  include "execute.hpp"
-#endif
-
-// With older GCC (libgcc), __builtin_cpu_supports("avx2) returns true if AVX2
-// is supported by the CPU but disabled by the OS. This was fixed in GCC 8, 7.4
-// and 6.5 (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85100).
-//
-// For Clang it seems to be correct if compiler-rt is used as -rtlib, at least
-// as of 3.9 (see https://bugs.llvm.org/show_bug.cgi?id=25510). But if libgcc is
-// used we have the same problem as mentioned above. Unfortunately there doesn't
-// seem to be a way to detect which one is used, or the version of libgcc when
-// used by Clang, so assume that it works with Clang >= 3.9.
-#if !(__GNUC__ >= 8 || (__GNUC__ == 7 && __GNUC_MINOR__ >= 4)                  \
-      || (__GNUC__ == 6 && __GNUC_MINOR__ >= 5) || __clang_major__ > 3         \
-      || (__clang_major__ == 3 && __clang_minor__ >= 9))
-#  undef HAVE_AVX2
 #endif
 
 #ifdef HAVE_AVX2
@@ -224,7 +211,7 @@ int
 check_for_temporal_macros(string_view str)
 {
 #ifdef HAVE_AVX2
-  if (__builtin_cpu_supports("avx2")) {
+  if (blake3_cpu_supports_avx2()) {
     return check_for_temporal_macros_avx2(str);
   }
 #endif
@@ -494,8 +481,12 @@ hash_command_output(Hash& hash,
     close(pipefd[0]);
 
     int status;
-    if (waitpid(pid, &status, 0) != pid) {
-      log("waitpid failed");
+    int result;
+    while ((result = waitpid(pid, &status, 0)) != pid) {
+      if (result == -1 && errno == EINTR) {
+        continue;
+      }
+      log("waitpid failed: {}", strerror(errno));
       return false;
     }
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
@@ -509,10 +500,10 @@ hash_command_output(Hash& hash,
 
 bool
 hash_multicommand_output(Hash& hash,
-                         const std::string& commands,
+                         const std::string& command,
                          const std::string& compiler)
 {
-  for (const std::string& cmd : Util::split_into_strings(commands, ";")) {
+  for (const std::string& cmd : Util::split_into_strings(command, ";")) {
     if (!hash_command_output(hash, cmd, compiler)) {
       return false;
     }

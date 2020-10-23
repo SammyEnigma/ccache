@@ -1,13 +1,10 @@
-set(third_party_source_files base32hex.c format.cpp xxhash.c)
-
+add_library(third_party_lib STATIC base32hex.c format.cpp xxhash.c)
 if(NOT MSVC)
-  list(APPEND third_party_source_files getopt_long.c)
+  target_sources(third_party_lib PRIVATE getopt_long.c)
 else()
-  list(APPEND third_party_source_files win32/getopt.c)
+  target_sources(third_party_lib PRIVATE win32/getopt.c)
   target_compile_definitions(third_party_lib PUBLIC -DSTATIC_GETOPT)
 endif()
-
-add_library(third_party_lib STATIC ${third_party_source_files})
 
 if(ENABLE_TRACING)
   target_sources(third_party_lib PRIVATE minitrace.c)
@@ -39,7 +36,7 @@ endif()
 # Treat third party headers as system files (no warning for those headers).
 target_include_directories(
   third_party_lib
-  PRIVATE ${CMAKE_BINARY_DIR} . SYSTEM INTERFACE .)
+  PRIVATE ${CMAKE_BINARY_DIR} . SYSTEM)
 
 target_link_libraries(third_party_lib PRIVATE standard_settings)
 target_link_libraries(third_party_lib INTERFACE blake3)
